@@ -3,7 +3,7 @@
 
 var gl, program, buffer, canvas;
 
-window.addEventListener("load", start, false);
+window.addEventListener("load", init, false);
 
 function initWebGL(canvas) {
   gl = null;
@@ -20,7 +20,7 @@ function initWebGL(canvas) {
   return gl;
 }
 
-function start() {
+function init() {
   canvas = document.getElementById("gl-canvas");
   gl = initWebGL(canvas);
 
@@ -31,7 +31,8 @@ function start() {
 
   initShaders();
   initBuffers();
-  drawScene();
+  initTextures();
+  startAnimation();
 }
 
 function compileShader(id) {
@@ -64,6 +65,10 @@ function initShaders() {
   var fragmentShader = compileShader("fragment-shader");
   var vertexShader = compileShader("vertex-shader");
 
+  if (!fragmentShader || !vertexShader) {
+    return null;
+  }
+
   program = gl.createProgram();
   gl.attachShader(program, fragmentShader);
   gl.attachShader(program, vertexShader);
@@ -93,7 +98,35 @@ function initBuffers() {
   );
 }
 
+var sphereTexture;
+
+function initTextures() {
+  sphereTexture = gl.createTexture();
+  var sphereImage = new Image();
+  sphereImage.onload = function() {
+    handleTextureLoaded(sphereImage, sphereTexture);
+  };
+  sphereImage.src = "checkers.png";
+}
+
+function handleTextureLoaded(image, texture) {
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.generateMipmap(gl.TEXTURE_2D);
+  gl.bindTexture(gl.TEXTURE_2D, null);
+}
+
+var startTime, animationActive;
+
 function drawScene() {
+  var s = window.getComputedStyle(canvas);
+  canvas.width = parseInt(s["width"], 10);
+  canvas.height = parseInt(s["height"], 10);
+
+  gl.viewport(0, 0, canvas.width, canvas.height);
+
   var position = gl.getAttribLocation(program, "position");
   gl.enableVertexAttribArray(position);
   gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
@@ -101,9 +134,33 @@ function drawScene() {
   var canvasSize = gl.getUniformLocation(program, "canvasSize");
   gl.uniform2f(canvasSize, canvas.width, canvas.height);
 
+  var t = gl.getUniformLocation(program, "time");
+  gl.uniform1f(t, Date.now()-startTime);
+
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, sphereTexture);
+  gl.uniform1i(gl.getUniformLocation(program, "uSampler"), 0);
+
   gl.clear(gl.COLOR_BUFFER_BIT);
 
   gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+  if (animationActive) {
+    requestAnimationFrame(drawScene);
+  }
+}
+
+function startAnimation() {
+  startTime = Date.now();
+
+  animationActive = true;
+  //timer = setInterval(drawScene, 17);
+  drawScene();
+}
+
+function stopAnimation() {
+  animationActive = false;
+  //clearInterval(timer);
 }
 
 })();
