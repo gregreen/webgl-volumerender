@@ -37,7 +37,7 @@ function init() {
 
   var waitInterval = setInterval(function() {
     if(allTexturesLoaded) {
-      console.log("Take " + (Date.now() - t0) + " ms to initialize.");
+      console.log("Took " + (Date.now() - t0) + " ms to initialize.");
       clearInterval(waitInterval);
       startAnimation();
     }
@@ -127,7 +127,7 @@ function initTextures() {
         }
       };
     }(i));
-    sphereImage[i].src = "earth256.png";
+    sphereImage[i].src = "texture_" + i + ".png";
   };
 }
 
@@ -188,7 +188,7 @@ function drawScene() {
   gl.uniform1f(t, tElapsed);
 
   // Camera origin
-  var dOrigin = 2. * Math.sin(Math.PI * tElapsed/40000.);
+  var dOrigin = 1. * Math.sin(Math.PI * tElapsed/40000.);
   dOrigin *= dOrigin;
 
   var xyzCamera = [

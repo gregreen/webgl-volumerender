@@ -33,8 +33,9 @@
     #define pi 3.14159
     #define fov 0.5*pi  // Field-of-view of camera
     #define n_steps 100 // # of steps to take for each ray
-    #define ray_max_dist 12.0 // Maximum distance for ray
+    #define ray_max_dist 5.0 // Maximum distance for ray
     #define tau_max 4.0 // Truncate ray after reaching this optical depth
+    #define xi 200.0 // Overall density scaling
 
     float step_size = (ray_max_dist / float(n_steps));
     float s_max = tau_max / step_size;
@@ -57,16 +58,117 @@
       return vec3(acos(xyz[2]/r), atan(xyz[1], xyz[0]), r);
     }
 
-    float density2(vec3 xyz) {
-      vec3 tpr = xyz2tpr(xyz);
+    float map_density_val(float v) {
+      return v*v*v*v;
+    }
 
-      if((tpr[2] > 0.8) && (tpr[2] < 1.0)) {
-        float xi = 5.;
+    float density2(vec3 xyz) {
+      vec3 tpr = xyz2tpr(xyz);  // Convert to spherical coords
+
+      if(tpr[2] < 63.096) {
+        // Convert to texture (u,v) coords
         vec2 uv = vec2(tpr[1]/(2.*pi), tpr[0]/pi);
-        if(tpr[2] < 1.0) {
-          vec4 img = 0.5*texture2D(uSampler[0], uv);
-          vec3 img3 = vec3(img.x, img.y, img.z);
-          return xi*length(img3);
+
+        // Determine which texture/channel to load
+        // based on distance from origin.
+        // Go from outside to inside, b/c largest
+        // radii cover most volume.
+        // TODO: Rewrite this as a binary search tree.
+        if(tpr[2] > 50.12) {
+          vec4 img = 0.5 * texture2D(uSampler[7], uv);
+          //vec3 img3 = vec3(img.x, img.y, img.z);
+          return img[2]; //*length(img3);
+        } else if (tpr[2] > 39.81) {
+          vec4 img = 0.5 * texture2D(uSampler[7], uv);
+          return img[1];
+        } else if (tpr[2] > 31.62) {
+          vec4 img = 0.5 * texture2D(uSampler[7], uv);
+          return img[0];
+        } else if (tpr[2] > 25.12) {
+          vec4 img = 0.5 * texture2D(uSampler[6], uv);
+          return img[3];
+        } else if (tpr[2] > 19.95) {
+          vec4 img = 0.5 * texture2D(uSampler[6], uv);
+          return img[2];
+        } else if (tpr[2] > 15.85) {
+          vec4 img = 0.5 * texture2D(uSampler[6], uv);
+          return img[1];
+        } else if (tpr[2] > 12.59) {
+          vec4 img = 0.5 * texture2D(uSampler[6], uv);
+          return img[0];
+        } else if (tpr[2] > 10.00) {
+          vec4 img = 0.5 * texture2D(uSampler[5], uv);
+          return img[3];
+        } else if (tpr[2] > 7.94) {
+          vec4 img = 0.5 * texture2D(uSampler[5], uv);
+          return img[2];
+        } else if (tpr[2] > 6.31) {
+          vec4 img = 0.5 * texture2D(uSampler[5], uv);
+          return img[1];
+        } else if (tpr[2] > 5.01) {
+          vec4 img = 0.5 * texture2D(uSampler[5], uv);
+          return img[0];
+        } else if (tpr[2] > 3.98) {
+          vec4 img = 0.5 * texture2D(uSampler[4], uv);
+          return img[3];
+        } else if (tpr[2] > 3.16) {
+          vec4 img = 0.5 * texture2D(uSampler[4], uv);
+          return img[2];
+        } else if (tpr[2] > 2.51) {
+          vec4 img = 0.5 * texture2D(uSampler[4], uv);
+          return img[1];
+        } else if (tpr[2] > 2.00) {
+          vec4 img = 0.5 * texture2D(uSampler[4], uv);
+          return img[0];
+        } else if (tpr[2] > 1.58) {
+          vec4 img = 0.5 * texture2D(uSampler[3], uv);
+          return img[3];
+        } else if (tpr[2] > 1.26) {
+          vec4 img = 0.5 * texture2D(uSampler[3], uv);
+          return img[2];
+        } else if (tpr[2] > 1.00) {
+          vec4 img = 0.5 * texture2D(uSampler[3], uv);
+          return img[1];
+        } else if (tpr[2] > 0.794) {
+          vec4 img = 0.5 * texture2D(uSampler[3], uv);
+          return img[0];
+        } else if (tpr[2] > 0.631) {
+          vec4 img = 0.5 * texture2D(uSampler[2], uv);
+          return img[3];
+        } else if (tpr[2] > 0.501) {
+          vec4 img = 0.5 * texture2D(uSampler[2], uv);
+          return img[2];
+        } else if (tpr[2] > 0.398) {
+          vec4 img = 0.5 * texture2D(uSampler[2], uv);
+          return img[1];
+        } else if (tpr[2] > 0.316) {
+          vec4 img = 0.5 * texture2D(uSampler[2], uv);
+          return img[0];
+        } else if (tpr[2] > 0.251) {
+          vec4 img = 0.5 * texture2D(uSampler[1], uv);
+          return img[3];
+        } else if (tpr[2] > 0.200) {
+          vec4 img = 0.5 * texture2D(uSampler[1], uv);
+          return img[2];
+        }
+        if (tpr[2] > 0.158) {
+          vec4 img = 0.5 * texture2D(uSampler[1], uv);
+          return img[1];
+        } else if (tpr[2] > 0.126) {
+          vec4 img = 0.5 * texture2D(uSampler[1], uv);
+          return img[0];
+        } else if (tpr[2] > 0.100) {
+          vec4 img = 0.5 * texture2D(uSampler[0], uv);
+          return img[3];
+        } else if (tpr[2] > 0.079) {
+          vec4 img = 0.5 * texture2D(uSampler[0], uv);
+          return img[2];
+        } else if (tpr[2] > 0.063) {
+          vec4 img = 0.5 * texture2D(uSampler[0], uv);
+          return img[1];
+        } else {
+          vec4 img = 0.5 * texture2D(uSampler[0], uv);
+          return img[0];
         }
       } else {
         return 0.;
@@ -78,13 +180,26 @@
       vec2 dxy = vec2(dx.x, dx.y);
       vec3 x = x0 + dx * (rand(dxy)-0.5);
 
-      for(int k=0; k<n_steps; k++) {
+      for(int k=0; k<n_steps/4; k++) {
         x += dx;
-       	s += density2(x);
-        if(s > s_max) { break; }  // Truncate ray after reaching some large optical depth
+       	s += map_density_val(density2(x));
+
+        x += dx;
+       	s += map_density_val(density2(x));
+
+        x += dx;
+       	s += map_density_val(density2(x));
+
+        x += dx;
+       	s += map_density_val(density2(x));
+
+        x += dx;
+       	s += map_density_val(density2(x));
+
+        if(xi*s > s_max) { break; }  // Truncate ray after reaching some large optical depth
       }
 
-      return s;
+      return xi*s;
     }
 
     void main() {
