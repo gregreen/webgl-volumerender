@@ -8,10 +8,11 @@
   <script src="volumerender.js" type="text/javascript"> </script>
 </head>
 <body>
-  <p>WebGL Volume Render</p>
+  <h4>WebGL Volume Renderer</h4>
   <canvas id="gl-canvas" width="480" height="240">
     Your browser does not seem to support the HTML5 <code>&lt;canvas&gt;</code> element.
   </canvas>
+  <p><span id="fps"></span><span> frames / second</span></p>
   <script type="x-shader/x-vertex" id="vertex-shader">
     //#version 100
     attribute vec2 position;

@@ -140,9 +140,33 @@ function handleTextureLoaded(image, texture) {
   gl.bindTexture(gl.TEXTURE_2D, null);
 }
 
+var fps = null;
+var tLastFrame = null;
+
+function updateFPS() {
+  var tNow = Date.now();
+
+  if (!tLastFrame){
+    tLastFrame = tNow;
+    return;
+  }
+
+  if (!fps) {
+    fps = 1000. / (tNow - tLastFrame);
+  } else {
+    fps = 0.95 * fps + 0.05 * 1000. / (tNow - tLastFrame);
+  }
+
+  tLastFrame = tNow;
+
+  document.getElementById("fps").innerHTML = Math.round(fps);
+}
+
 var startTime, animationActive;
 
 function drawScene() {
+  updateFPS();
+
   var s = window.getComputedStyle(canvas);
   canvas.width = parseInt(s["width"], 10);
   canvas.height = parseInt(s["height"], 10);
