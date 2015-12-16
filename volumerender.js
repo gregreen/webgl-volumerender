@@ -3,7 +3,7 @@
 
 var gl, program, buffer, canvas;
 
-window.addEventListener("load", start, false);
+window.addEventListener("load", init, false);
 
 function initWebGL(canvas) {
   gl = null;
@@ -20,7 +20,7 @@ function initWebGL(canvas) {
   return gl;
 }
 
-function start() {
+function init() {
   canvas = document.getElementById("gl-canvas");
   gl = initWebGL(canvas);
 
@@ -31,7 +31,8 @@ function start() {
 
   initShaders();
   initBuffers();
-  drawScene();
+  initTextures();
+  startAnimation();
 }
 
 function compileShader(id) {
@@ -64,6 +65,10 @@ function initShaders() {
   var fragmentShader = compileShader("fragment-shader");
   var vertexShader = compileShader("vertex-shader");
 
+  if (!fragmentShader || !vertexShader) {
+    return null;
+  }
+
   program = gl.createProgram();
   gl.attachShader(program, fragmentShader);
   gl.attachShader(program, vertexShader);
@@ -93,17 +98,188 @@ function initBuffers() {
   );
 }
 
+var sphereTexture;
+
+function initTextures() {
+  sphereTexture = gl.createTexture();
+  var sphereImage = new Image();
+  sphereImage.onload = function() {
+    handleTextureLoaded(sphereImage, sphereTexture);
+  };
+  sphereImage.src = "earth2048.png";
+}
+
+function handleTextureLoaded(image, texture) {
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.generateMipmap(gl.TEXTURE_2D);
+  gl.bindTexture(gl.TEXTURE_2D, null);
+}
+
+var startTime, animationActive;
+
 function drawScene() {
+  var s = window.getComputedStyle(canvas);
+  canvas.width = parseInt(s["width"], 10);
+  canvas.height = parseInt(s["height"], 10);
+
+  gl.viewport(0, 0, canvas.width, canvas.height);
+
+  // Screen (x, y)
   var position = gl.getAttribLocation(program, "position");
   gl.enableVertexAttribArray(position);
   gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
 
+  // Canvas size
   var canvasSize = gl.getUniformLocation(program, "canvasSize");
   gl.uniform2f(canvasSize, canvas.width, canvas.height);
+
+  // Time
+  var tElapsed = Date.now()-startTime;
+  var t = gl.getUniformLocation(program, "time");
+  gl.uniform1f(t, tElapsed);
+
+  // Camera origin
+  var dOrigin = 2. * Math.sin(Math.PI * tElapsed/40000.);
+  dOrigin *= dOrigin;
+
+  var xyzCamera = [
+    dOrigin * Math.cos(2.*Math.PI * tElapsed/20000.),
+    dOrigin * Math.sin(2.*Math.PI * tElapsed/20000.),
+    0.0
+  ];
+  var cameraOrigin = gl.getUniformLocation(program, "cameraOrigin");
+  gl.uniform3f(cameraOrigin, xyzCamera[0], xyzCamera[1], xyzCamera[2]);
+
+  // Camera orientation
+  var cameraRotMat = make3DRotation(
+    Math.PI/2.,
+    -Math.PI/2.,// - 2.*Math.PI*(tElapsed/4000.),
+    0.
+  );
+  cameraRotMat = matrixMultiply(
+    cameraRotMat,
+    make3DRotation(0., 0., 2.*Math.PI*(tElapsed/20000.))
+  );
+  var cameraRot = gl.getUniformLocation(program, "cameraRot");
+  gl.uniformMatrix4fv(cameraRot, false, cameraRotMat);
+
+  // Texture (to be interpreted as Cartesian projection)
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, sphereTexture);
+  gl.uniform1i(gl.getUniformLocation(program, "uSampler"), 0);
 
   gl.clear(gl.COLOR_BUFFER_BIT);
 
   gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+  if (animationActive) {
+    requestAnimationFrame(drawScene);
+  }
+}
+
+function startAnimation() {
+  startTime = Date.now();
+
+  animationActive = true;
+  drawScene();
+}
+
+function stopAnimation() {
+  animationActive = false;
+}
+
+function makeXRotation(theta) {
+  var c = Math.cos(theta);
+  var s = Math.sin(theta);
+  return [
+    1, 0, 0, 0,
+    0, c, s, 0,
+    0, -s, c, 0,
+    0, 0, 0, 1
+  ];
+};
+
+function makeYRotation(theta) {
+  var c = Math.cos(theta);
+  var s = Math.sin(theta);
+  return [
+    c, 0, -s, 0,
+    0, 1, 0, 0,
+    s, 0, c, 0,
+    0, 0, 0, 1
+  ];
+};
+
+function makeZRotation(theta) {
+  var c = Math.cos(theta);
+  var s = Math.sin(theta);
+  return [
+     c, s, 0, 0,
+    -s, c, 0, 0,
+     0, 0, 1, 0,
+     0, 0, 0, 1,
+  ];
+}
+
+function make3DRotation(a, b, g) {
+  var matrix = makeZRotation(g);
+  matrix = matrixMultiply(matrix, makeYRotation(b));
+  matrix = matrixMultiply(matrix, makeXRotation(a));
+  return matrix;
+}
+
+function matrixMultiply(a, b) {
+  var a00 = a[0*4+0];
+  var a01 = a[0*4+1];
+  var a02 = a[0*4+2];
+  var a03 = a[0*4+3];
+  var a10 = a[1*4+0];
+  var a11 = a[1*4+1];
+  var a12 = a[1*4+2];
+  var a13 = a[1*4+3];
+  var a20 = a[2*4+0];
+  var a21 = a[2*4+1];
+  var a22 = a[2*4+2];
+  var a23 = a[2*4+3];
+  var a30 = a[3*4+0];
+  var a31 = a[3*4+1];
+  var a32 = a[3*4+2];
+  var a33 = a[3*4+3];
+  var b00 = b[0*4+0];
+  var b01 = b[0*4+1];
+  var b02 = b[0*4+2];
+  var b03 = b[0*4+3];
+  var b10 = b[1*4+0];
+  var b11 = b[1*4+1];
+  var b12 = b[1*4+2];
+  var b13 = b[1*4+3];
+  var b20 = b[2*4+0];
+  var b21 = b[2*4+1];
+  var b22 = b[2*4+2];
+  var b23 = b[2*4+3];
+  var b30 = b[3*4+0];
+  var b31 = b[3*4+1];
+  var b32 = b[3*4+2];
+  var b33 = b[3*4+3];
+  return [a00 * b00 + a01 * b10 + a02 * b20 + a03 * b30,
+          a00 * b01 + a01 * b11 + a02 * b21 + a03 * b31,
+          a00 * b02 + a01 * b12 + a02 * b22 + a03 * b32,
+          a00 * b03 + a01 * b13 + a02 * b23 + a03 * b33,
+          a10 * b00 + a11 * b10 + a12 * b20 + a13 * b30,
+          a10 * b01 + a11 * b11 + a12 * b21 + a13 * b31,
+          a10 * b02 + a11 * b12 + a12 * b22 + a13 * b32,
+          a10 * b03 + a11 * b13 + a12 * b23 + a13 * b33,
+          a20 * b00 + a21 * b10 + a22 * b20 + a23 * b30,
+          a20 * b01 + a21 * b11 + a22 * b21 + a23 * b31,
+          a20 * b02 + a21 * b12 + a22 * b22 + a23 * b32,
+          a20 * b03 + a21 * b13 + a22 * b23 + a23 * b33,
+          a30 * b00 + a31 * b10 + a32 * b20 + a33 * b30,
+          a30 * b01 + a31 * b11 + a32 * b21 + a33 * b31,
+          a30 * b02 + a31 * b12 + a32 * b22 + a33 * b32,
+          a30 * b03 + a31 * b13 + a32 * b23 + a33 * b33];
 }
 
 })();

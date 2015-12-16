@@ -1,14 +1,16 @@
 body {
   text-align : center;
 }
+
 canvas {
-  width : 280px;
-  height : 210px;
+  width : 80vw;
+  height : 60vw;
   margin : auto;
   padding : 0;
   border : none;
   background-color : black;
 }
+
 button {
   display : block;
   font-size : inherit;
