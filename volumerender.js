@@ -188,13 +188,13 @@ function drawScene() {
   gl.uniform1f(t, tElapsed);
 
   // Camera origin
-  var dOrigin = 1. * Math.sin(Math.PI * tElapsed/40000.);
+  var dOrigin = 0.5 * Math.sin(Math.PI * tElapsed/60000.);
   dOrigin *= dOrigin;
 
   var xyzCamera = [
-    dOrigin * Math.cos(2.*Math.PI * tElapsed/20000.),
-    dOrigin * Math.sin(2.*Math.PI * tElapsed/20000.),
-    0.0
+    dOrigin * Math.cos(2.*Math.PI * tElapsed/30000.),
+    dOrigin * Math.sin(2.*Math.PI * tElapsed/30000.),
+    0.5 * Math.sin(2.*Math.PI * tElapsed/45000.)
   ];
   var cameraOrigin = gl.getUniformLocation(program, "cameraOrigin");
   gl.uniform3f(cameraOrigin, xyzCamera[0], xyzCamera[1], xyzCamera[2]);
@@ -202,12 +202,16 @@ function drawScene() {
   // Camera orientation
   var cameraRotMat = make3DRotation(
     Math.PI/2.,
-    -Math.PI/2.,// - 2.*Math.PI*(tElapsed/4000.),
+    -Math.PI/2.,
     0.
   );
   cameraRotMat = matrixMultiply(
-    cameraRotMat,
-    make3DRotation(0., 0., 2.*Math.PI*(tElapsed/20000.))
+    makeXRotation(0.15*Math.PI * Math.sin(2.*Math.PI * tElapsed/45000.)),
+    cameraRotMat
+  );
+  cameraRotMat = matrixMultiply(
+      cameraRotMat,
+      makeZRotation(2.*Math.PI*(tElapsed/15000.))
   );
   var cameraRot = gl.getUniformLocation(program, "cameraRot");
   gl.uniformMatrix4fv(cameraRot, false, cameraRotMat);
