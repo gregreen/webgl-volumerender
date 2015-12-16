@@ -21,6 +21,8 @@ function initWebGL(canvas) {
 }
 
 function init() {
+  var t0 = Date.now();
+
   canvas = document.getElementById("gl-canvas");
   gl = initWebGL(canvas);
 
@@ -32,7 +34,14 @@ function init() {
   initShaders();
   initBuffers();
   initTextures();
-  startAnimation();
+
+  var waitInterval = setInterval(function() {
+    if(allTexturesLoaded) {
+      console.log("Took " + (Date.now() - t0) + " ms to initialize.");
+      clearInterval(waitInterval);
+      startAnimation();
+    }
+  }, 10);
 }
 
 function compileShader(id) {
@@ -98,15 +107,28 @@ function initBuffers() {
   );
 }
 
-var sphereTexture;
+var sphereTexture = [],
+    sphereImage = [],
+    nTexturesLoaded = 0,
+    allTexturesLoaded = false;
 
 function initTextures() {
-  sphereTexture = gl.createTexture();
-  var sphereImage = new Image();
-  sphereImage.onload = function() {
-    handleTextureLoaded(sphereImage, sphereTexture);
+  for(var i=0; i<8; i++) {
+    sphereTexture[i] = gl.createTexture();
+    sphereImage[i] = new Image();
+    (function(index) {
+      sphereImage[i].onload = function() {
+        handleTextureLoaded(sphereImage[index], sphereTexture[index]);
+        console.log('Loaded image ' + index);
+        console.log('# loaded: ' + (nTexturesLoaded+1));
+        if (++nTexturesLoaded >= 8) {
+          allTexturesLoaded = true;
+          console.log("loaded all images.");
+        }
+      };
+    }(i));
+    sphereImage[i].src = "texture_" + i + ".png";
   };
-  sphereImage.src = "earth2048.png";
 }
 
 function handleTextureLoaded(image, texture) {
@@ -114,13 +136,37 @@ function handleTextureLoaded(image, texture) {
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-  gl.generateMipmap(gl.TEXTURE_2D);
+  //gl.generateMipmap(gl.TEXTURE_2D);
   gl.bindTexture(gl.TEXTURE_2D, null);
+}
+
+var fps = null;
+var tLastFrame = null;
+
+function updateFPS() {
+  var tNow = Date.now();
+
+  if (!tLastFrame){
+    tLastFrame = tNow;
+    return;
+  }
+
+  if (!fps) {
+    fps = 1000. / (tNow - tLastFrame);
+  } else {
+    fps = 0.95 * fps + 0.05 * 1000. / (tNow - tLastFrame);
+  }
+
+  tLastFrame = tNow;
+
+  document.getElementById("fps").innerHTML = Math.round(fps);
 }
 
 var startTime, animationActive;
 
 function drawScene() {
+  updateFPS();
+
   var s = window.getComputedStyle(canvas);
   canvas.width = parseInt(s["width"], 10);
   canvas.height = parseInt(s["height"], 10);
@@ -142,13 +188,13 @@ function drawScene() {
   gl.uniform1f(t, tElapsed);
 
   // Camera origin
-  var dOrigin = 2. * Math.sin(Math.PI * tElapsed/40000.);
+  var dOrigin = 0.5 * Math.sin(Math.PI * tElapsed/60000.);
   dOrigin *= dOrigin;
 
   var xyzCamera = [
-    dOrigin * Math.cos(2.*Math.PI * tElapsed/20000.),
-    dOrigin * Math.sin(2.*Math.PI * tElapsed/20000.),
-    0.0
+    dOrigin * Math.cos(2.*Math.PI * tElapsed/30000.),
+    dOrigin * Math.sin(2.*Math.PI * tElapsed/30000.),
+    0.5 * Math.sin(2.*Math.PI * tElapsed/45000.)
   ];
   var cameraOrigin = gl.getUniformLocation(program, "cameraOrigin");
   gl.uniform3f(cameraOrigin, xyzCamera[0], xyzCamera[1], xyzCamera[2]);
@@ -156,20 +202,27 @@ function drawScene() {
   // Camera orientation
   var cameraRotMat = make3DRotation(
     Math.PI/2.,
-    -Math.PI/2.,// - 2.*Math.PI*(tElapsed/4000.),
+    -Math.PI/2.,
     0.
   );
   cameraRotMat = matrixMultiply(
-    cameraRotMat,
-    make3DRotation(0., 0., 2.*Math.PI*(tElapsed/20000.))
+    makeXRotation(0.15*Math.PI * Math.sin(2.*Math.PI * tElapsed/45000.)),
+    cameraRotMat
+  );
+  cameraRotMat = matrixMultiply(
+      cameraRotMat,
+      makeZRotation(2.*Math.PI*(tElapsed/15000.))
   );
   var cameraRot = gl.getUniformLocation(program, "cameraRot");
   gl.uniformMatrix4fv(cameraRot, false, cameraRotMat);
 
   // Texture (to be interpreted as Cartesian projection)
-  gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_2D, sphereTexture);
-  gl.uniform1i(gl.getUniformLocation(program, "uSampler"), 0);
+  for(var i=0; i<8; i++) {
+    gl.activeTexture(gl.TEXTURE0 + i);
+    gl.bindTexture(gl.TEXTURE_2D, sphereTexture[i]);
+  }
+  var textureLoc = gl.getUniformLocation(program, "uSampler");
+  gl.uniform1iv(textureLoc, [0,1,2,3,4,5,6,7,8]);
 
   gl.clear(gl.COLOR_BUFFER_BIT);
 
