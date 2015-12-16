@@ -21,6 +21,8 @@ function initWebGL(canvas) {
 }
 
 function init() {
+  var t0 = Date.now();
+
   canvas = document.getElementById("gl-canvas");
   gl = initWebGL(canvas);
 
@@ -32,7 +34,14 @@ function init() {
   initShaders();
   initBuffers();
   initTextures();
-  startAnimation();
+
+  var waitInterval = setInterval(function() {
+    if(allTexturesLoaded) {
+      console.log("Take " + (Date.now() - t0) + " ms to initialize.");
+      clearInterval(waitInterval);
+      startAnimation();
+    }
+  }, 10);
 }
 
 function compileShader(id) {
@@ -98,15 +107,28 @@ function initBuffers() {
   );
 }
 
-var sphereTexture;
+var sphereTexture = [],
+    sphereImage = [],
+    nTexturesLoaded = 0,
+    allTexturesLoaded = false;
 
 function initTextures() {
-  sphereTexture = gl.createTexture();
-  var sphereImage = new Image();
-  sphereImage.onload = function() {
-    handleTextureLoaded(sphereImage, sphereTexture);
+  for(var i=0; i<8; i++) {
+    sphereTexture[i] = gl.createTexture();
+    sphereImage[i] = new Image();
+    (function(index) {
+      sphereImage[i].onload = function() {
+        handleTextureLoaded(sphereImage[index], sphereTexture[index]);
+        console.log('Loaded image ' + index);
+        console.log('# loaded: ' + (nTexturesLoaded+1));
+        if (++nTexturesLoaded >= 8) {
+          allTexturesLoaded = true;
+          console.log("loaded all images.");
+        }
+      };
+    }(i));
+    sphereImage[i].src = "earth256.png";
   };
-  sphereImage.src = "earth2048.png";
 }
 
 function handleTextureLoaded(image, texture) {
@@ -114,7 +136,7 @@ function handleTextureLoaded(image, texture) {
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-  gl.generateMipmap(gl.TEXTURE_2D);
+  //gl.generateMipmap(gl.TEXTURE_2D);
   gl.bindTexture(gl.TEXTURE_2D, null);
 }
 
@@ -167,9 +189,12 @@ function drawScene() {
   gl.uniformMatrix4fv(cameraRot, false, cameraRotMat);
 
   // Texture (to be interpreted as Cartesian projection)
-  gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_2D, sphereTexture);
-  gl.uniform1i(gl.getUniformLocation(program, "uSampler"), 0);
+  for(var i=0; i<8; i++) {
+    gl.activeTexture(gl.TEXTURE0 + i);
+    gl.bindTexture(gl.TEXTURE_2D, sphereTexture[i]);
+  }
+  var textureLoc = gl.getUniformLocation(program, "uSampler");
+  gl.uniform1iv(textureLoc, [0,1,2,3,4,5,6,7,8]);
 
   gl.clear(gl.COLOR_BUFFER_BIT);
 

@@ -24,7 +24,7 @@
     //#version 100
     precision mediump float;
     uniform vec2 canvasSize;
-    uniform sampler2D uSampler;
+    uniform sampler2D uSampler[8];
     uniform float time;
     uniform vec3 cameraOrigin;
     uniform mat4 cameraRot;
@@ -63,7 +63,7 @@
         float xi = 5.;
         vec2 uv = vec2(tpr[1]/(2.*pi), tpr[0]/pi);
         if(tpr[2] < 1.0) {
-          vec4 img = 0.5*texture2D(uSampler, uv);
+          vec4 img = 0.5*texture2D(uSampler[0], uv);
           vec3 img3 = vec3(img.x, img.y, img.z);
           return xi*length(img3);
         }
@@ -111,6 +111,8 @@
   	  float opacity = 1. - exp(-tau);
 
       gl_FragColor = vec4(opacity, opacity, opacity, 1.0);
+      //gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);
+      //gl_FragColor = texture2D(uSampler[0], uv);
     }
   </script>
 </body>
