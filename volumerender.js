@@ -34,6 +34,7 @@ function init() {
   initShaders();
   initBuffers();
   initTextures();
+  initKeyEvents();
 
   var waitInterval = setInterval(function() {
     if(allTexturesLoaded) {
@@ -148,24 +149,28 @@ function updateFPS() {
 
   if (!tLastFrame){
     tLastFrame = tNow;
-    return;
+    return null;
   }
 
+  var frameDuration = tNow - tLastFrame;
+
   if (!fps) {
-    fps = 1000. / (tNow - tLastFrame);
+    fps = 1000. / frameDuration;
   } else {
-    fps = 0.95 * fps + 0.05 * 1000. / (tNow - tLastFrame);
+    fps = 0.95 * fps + 0.05 * 1000. / frameDuration;
   }
 
   tLastFrame = tNow;
 
   document.getElementById("fps").innerHTML = Math.round(fps);
+
+  return frameDuration;
 }
 
 var startTime, animationActive;
 
 function drawScene() {
-  updateFPS();
+  var dt = updateFPS();
 
   var s = window.getComputedStyle(canvas);
   canvas.width = parseInt(s["width"], 10);
@@ -187,34 +192,61 @@ function drawScene() {
   var t = gl.getUniformLocation(program, "time");
   gl.uniform1f(t, tElapsed);
 
-  // Camera origin
-  var dOrigin = 0.5 * Math.sin(Math.PI * tElapsed/60000.);
-  dOrigin *= dOrigin;
-
-  var xyzCamera = [
-    dOrigin * Math.cos(2.*Math.PI * tElapsed/30000.),
-    dOrigin * Math.sin(2.*Math.PI * tElapsed/30000.),
-    0.5 * Math.sin(2.*Math.PI * tElapsed/45000.)
-  ];
-  var cameraOrigin = gl.getUniformLocation(program, "cameraOrigin");
-  gl.uniform3f(cameraOrigin, xyzCamera[0], xyzCamera[1], xyzCamera[2]);
-
   // Camera orientation
   var cameraRotMat = make3DRotation(
     Math.PI/2.,
     -Math.PI/2.,
     0.
   );
+
+  var lrRotSpeed = 2. * Math.PI / 10.;  // rad/s
+  var udRotSpeed = 2. * Math.PI / 20.;  // rad/s
+  var forwardSpeed = 1. / 5.;           // kpc/s
+
+  if (lrRotState && dt) {
+    lrRotAngle += lrRotSpeed * lrRotState * dt / 1000.;
+    console.log("lrRotAngle = " + lrRotAngle);
+  }
+  if (udRotState && dt) {
+    udRotAngle += udRotSpeed * udRotState * dt / 1000.;
+    console.log("udRotAngle = " + udRotAngle);
+  }
+
   cameraRotMat = matrixMultiply(
-    makeXRotation(0.15*Math.PI * Math.sin(2.*Math.PI * tElapsed/45000.)),
-    cameraRotMat
+     makeXRotation(udRotAngle),//0.15*Math.PI * Math.sin(2.*Math.PI * tElapsed/45000.)),
+     cameraRotMat
   );
   cameraRotMat = matrixMultiply(
       cameraRotMat,
-      makeZRotation(2.*Math.PI*(tElapsed/15000.))
+      makeZRotation(lrRotAngle)//makeZRotation(2.*Math.PI*(tElapsed/15000.))
   );
   var cameraRot = gl.getUniformLocation(program, "cameraRot");
   gl.uniformMatrix4fv(cameraRot, false, cameraRotMat);
+
+  // Camera origin
+  //var dOrigin = 0.5 * Math.sin(Math.PI * tElapsed/60000.);
+  //dOrigin *= dOrigin;
+
+  // var xyzCamera = [
+  //   0.,//dOrigin * Math.cos(2.*Math.PI * tElapsed/30000.),
+  //   0.,//dOrigin * Math.sin(2.*Math.PI * tElapsed/30000.),
+  //   0.//0.5 * Math.sin(2.*Math.PI * tElapsed/45000.)
+  // ];
+
+  if (forwardState == 1) {
+    console.log("forwardState = " + forwardState);
+    var cameraVec = [
+      -Math.cos(lrRotAngle) * Math.cos(udRotAngle),
+      -Math.sin(lrRotAngle) * Math.cos(udRotAngle),
+      -Math.sin(udRotAngle)
+    ];
+    xyzCamera[0] += cameraVec[0] * forwardSpeed * dt / 1000.;
+    xyzCamera[1] += cameraVec[1] * forwardSpeed * dt / 1000.;
+    xyzCamera[2] += cameraVec[2] * forwardSpeed * dt / 1000.;
+  }
+
+  var cameraOrigin = gl.getUniformLocation(program, "cameraOrigin");
+  gl.uniform3f(cameraOrigin, xyzCamera[0], xyzCamera[1], xyzCamera[2]);
 
   // Texture (to be interpreted as Cartesian projection)
   for(var i=0; i<8; i++) {
@@ -242,6 +274,46 @@ function startAnimation() {
 
 function stopAnimation() {
   animationActive = false;
+}
+
+//var cameraRotMat, cameraOrigin;
+var xyzCamera = [0., 0., 0.];
+var lrRotState = null,
+    udRotState = null;
+var lrRotAngle = 0.0,
+    udRotAngle = 0.0;
+var forwardState = 0;
+
+function initKeyEvents() {
+  $(document).keydown(function(e) {
+    console.log(e);
+    if (e.key == "ArrowRight") {
+      lrRotState = 1;
+      console.log("lrRotState = " + lrRotState);
+    } else if (e.key == "ArrowLeft") {
+      lrRotState = -1;
+      console.log("lrRotState = " + lrRotState);
+    } else if (e.key == "ArrowDown") {
+      udRotState = -1;
+      console.log("udRotState = " + udRotState);
+    } else if (e.key == "ArrowUp") {
+      udRotState = 1;
+      console.log("udRotState = " + udRotState);
+    } else if (e.key == " ") {
+      forwardState = 1 - forwardState;
+      console.log("forwardState = " + forwardState);
+    }
+  });
+  $(document).keyup(function(e) {
+    if ((e.key == "ArrowRight") || (e.key == "ArrowLeft")) {
+      lrRotState = null;
+      console.log("lrRotState = " + lrRotState);
+    }
+    if ((e.key == "ArrowDown") || (e.key == "ArrowUp")) {
+      udRotState = null;
+      console.log("udRotState = " + udRotState);
+    }
+  });
 }
 
 function makeXRotation(theta) {
