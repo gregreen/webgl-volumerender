@@ -42,23 +42,31 @@
     float s_max = tau_max / step_size;
     float screen_dist = 1. / sin(0.5*fov);
 
+
+    // Orthographic projection
     vec3 unit_ray(vec2 uv) {
     	return normalize(vec3(uv, screen_dist));
     }
 
+    // Random number generator
     float rand(vec2 co){
       return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
     }
 
+    // Convert Cartesian to Spherical (physics convention)
     vec3 xyz2tpr(vec3 xyz) {
       float r = length(xyz);
       return vec3(acos(xyz[2]/r), atan(xyz[1], xyz[0]), r);
     }
 
+    // Map texture values to density (textures don't store density linearly,
+    // because of limited, 8-bit precision)
     float map_density_val(float v) {
       return v*v*v*v;
     }
 
+    // Look up density at position (x,y,z) in space, by querying appropriate
+    // texture.
     float density(vec3 xyz) {
       vec3 tpr = xyz2tpr(xyz);  // Convert to spherical coords
 
@@ -171,6 +179,7 @@
       }
     }
 
+    // Integrate a ray (through the density field) along x0 + s*dx
     float integrate_ray(vec3 x0, vec3 dx) {
       float s = 0.;
       vec2 dxy = vec2(dx.x, dx.y);
