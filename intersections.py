@@ -103,9 +103,60 @@ def test_cylinder_intersections(n, eps=1.e-10):
 
     return np.all(good_idx)
 
+
+def ray_endpoints(r, h, x0, dx):
+    '''
+    Calculate the intersections of a ray with a cylinder defined by a radius
+    r and height h (extending to both z = +-h).
+    '''
+
+    # Intersection with the top cap
+    s_top = plane_intersection(np.array([0., 0., 1.]), h, x0, dx)
+
+    if s_top > 0.:
+        x_top = x0 + s_top * dx
+        if x_top[0]**2 + x_top[1]**2 > r**2:
+            s_top = -1.
+
+    # Intersection with the bottom cap
+    s_bottom = plane_intersection(np.array([0., 0., 1.]), -h, x0, dx)
+
+    if s_bottom > 0.:
+        x_bottom = x0 + s_bottom * dx
+        if x_bottom[0]**2 + x_bottom[1]**2 > r**2:
+            s_bottom = -1.
+
+    # Intersection with the cylinder's circular edge
+    s_plus, s_minus = cylinder_intersections(r, x0, dx)
+
+    if s_plus > 0.:
+        x_plus = x0 + s_plus * dx
+        if (x_plus[2] < -h) or (x_plus[2] > h):
+            s_plus = -1.
+
+    if s_minus > 0.:
+        x_minus = x0 + s_minus * dx
+        if (x_minus[2] < -h) or (x_minus[2] > h):
+            s_minus = -1.
+
+    s = np.array([s_top, s_bottom, s_minus, s_plus])
+
+    return s
+
+
+
 def main():
-    passed = test_plane_intersection(10)
-    passed = test_cylinder_intersections(10)
+    #passed = test_plane_intersection(10)
+    #passed = test_cylinder_intersections(10)
+
+    r = 1.0
+    h = 0.5
+    x0 = np.array([-1.5, 0., 0.])
+    dx = np.array([ 1., 0., 0.1])
+
+    s_endpoints = ray_endpoints(r, h, x0, dx)
+
+    print s_endpoints
 
     return 0
 
