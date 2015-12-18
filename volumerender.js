@@ -114,7 +114,21 @@ var sphereTexture = [],
     allTexturesLoaded = false;
 
 function initTextures() {
-  for(var i=0; i<8; i++) {
+  // Choose a texture size
+  var max_texture_size = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+  var avail_sizes = [2048, 1024, 512, 256];
+  var tex_size = avail_sizes[avail_sizes.length-1];
+  for (var i=0; i<avail_sizes.length; i++) {
+    if (avail_sizes[i] <= max_texture_size) {
+      tex_size = avail_sizes[i];
+      break;
+    }
+  }
+
+  console.log("Choosing texture size " + tex_size + "x" + (tex_size/2));
+
+  // Load the textures
+  for (var i=0; i<8; i++) {
     sphereTexture[i] = gl.createTexture();
     sphereImage[i] = new Image();
     (function(index) {
@@ -128,7 +142,7 @@ function initTextures() {
         }
       };
     }(i));
-    sphereImage[i].src = "texture_" + i + ".png";
+    sphereImage[i].src = "texture_" + tex_size + "x" + (tex_size/2) + "_" + i + ".png";
   };
 }
 
@@ -199,8 +213,8 @@ function drawScene() {
     0.
   );
 
-  var lrRotSpeed = 2. * Math.PI / 10.;  // rad/s
-  var udRotSpeed = 2. * Math.PI / 20.;  // rad/s
+  var lrRotSpeed = 2. * Math.PI / 5.;   // rad/s
+  var udRotSpeed = 2. * Math.PI / 10.;  // rad/s
   var forwardSpeed = 1. / 5.;           // kpc/s
 
   if (lrRotState && dt) {
@@ -223,27 +237,20 @@ function drawScene() {
   var cameraRot = gl.getUniformLocation(program, "cameraRot");
   gl.uniformMatrix4fv(cameraRot, false, cameraRotMat);
 
-  // Camera origin
-  //var dOrigin = 0.5 * Math.sin(Math.PI * tElapsed/60000.);
-  //dOrigin *= dOrigin;
-
-  // var xyzCamera = [
-  //   0.,//dOrigin * Math.cos(2.*Math.PI * tElapsed/30000.),
-  //   0.,//dOrigin * Math.sin(2.*Math.PI * tElapsed/30000.),
-  //   0.//0.5 * Math.sin(2.*Math.PI * tElapsed/45000.)
-  // ];
-
-  if (forwardState == 1) {
+  if (forwardState) {
+    var speedMod = 1. + Math.sqrt(xyzCamera[0]*xyzCamera[0] + xyzCamera[1]*xyzCamera[1] + xyzCamera[2]*xyzCamera[2]);
     console.log("forwardState = " + forwardState);
     var cameraVec = [
       -Math.cos(lrRotAngle) * Math.cos(udRotAngle),
       -Math.sin(lrRotAngle) * Math.cos(udRotAngle),
       -Math.sin(udRotAngle)
     ];
-    xyzCamera[0] += cameraVec[0] * forwardSpeed * dt / 1000.;
-    xyzCamera[1] += cameraVec[1] * forwardSpeed * dt / 1000.;
-    xyzCamera[2] += cameraVec[2] * forwardSpeed * dt / 1000.;
+    xyzCamera[0] += cameraVec[0] * speedMod * forwardSpeed * dt / 1000. * forwardState;
+    xyzCamera[1] += cameraVec[1] * speedMod * forwardSpeed * dt / 1000. * forwardState;
+    xyzCamera[2] += cameraVec[2] * speedMod * forwardSpeed * dt / 1000. * forwardState;
   }
+
+  console.log("xyzCamera = " + xyzCamera);
 
   var cameraOrigin = gl.getUniformLocation(program, "cameraOrigin");
   gl.uniform3f(cameraOrigin, xyzCamera[0], xyzCamera[1], xyzCamera[2]);
@@ -282,7 +289,7 @@ var lrRotState = null,
     udRotState = null;
 var lrRotAngle = 0.0,
     udRotAngle = 0.0;
-var forwardState = 0;
+var forwardState = null;
 
 function initKeyEvents() {
   $(document).keydown(function(e) {
@@ -299,8 +306,19 @@ function initKeyEvents() {
     } else if (e.key == "ArrowUp") {
       udRotState = 1;
       console.log("udRotState = " + udRotState);
-    } else if (e.key == " ") {
-      forwardState = 1 - forwardState;
+    } else if ((e.key == " ") || (e.key == "f")) {
+      if (!forwardState || (forwardState == -1)) {
+        forwardState = 1;
+      } else if (forwardState == 1) {
+        forwardState = null;
+      }
+      console.log("forwardState = " + forwardState);
+    } else if (e.key == "d") {
+      if (!forwardState || (forwardState == 1)) {
+        forwardState = -1;
+      } else if (forwardState == -1) {
+        forwardState = null;
+      }
       console.log("forwardState = " + forwardState);
     }
   });

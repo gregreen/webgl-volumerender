@@ -67,6 +67,8 @@ def main():
 
     # Determine the Cartesian projection
     x_size = 8192
+    n_downsample = 1
+    x_size_reduced = x_size / 2**n_downsample
     pp = np.linspace(0., 2.*np.pi, x_size+1)[:-1]
     tt = np.linspace(0., np.pi, x_size/2)
     t,p = np.meshgrid(tt,pp)
@@ -95,7 +97,9 @@ def main():
         print np.percentile(EBV_hires[~pix_missing], [1., 10., 25., 50., 75., 90., 99.])
 
         proj_map = EBV_hires[ipix][::-1,:]
-        proj_map = downsample_by_2(downsample_by_2(downsample_by_2(proj_map)))
+        for j in xrange(n_downsample):
+            proj_map = downsample_by_2(proj_map)
+        #proj_map = downsample_by_2(downsample_by_2(downsample_by_2(proj_map)))
 
         # import matplotlib.pyplot as plt
         # fig = plt.figure(0, figsize=(10,5), dpi=100)
@@ -120,17 +124,17 @@ def main():
             # Save image
             print 'Saving image {:d} ...'.format(tex_idx+1)
             im_merged = Image.merge('RGBA', rgba_img)
-            im_merged.save('texture_{}.png'.format(tex_idx))
+            im_merged.save('texture_{}x{}_{}.png'.format(x_size_reduced, x_size_reduced/2, tex_idx))
             rgba_img = []
             tex_idx += 1
 
     if len(rgba_img) != 0:
         print 'Saving image {:d} ...'.format(tex_idx+1)
         for k in range(len(rgba_img),4):
-            img_tmp = 255*np.ones((x_size/16,x_size/8), dtype='uint8')
+            img_tmp = 255*np.ones((x_size_reduced/2,x_size_reduced), dtype='uint8')
             rgba_img.append(Image.fromarray(img_tmp))
         im_merged = Image.merge('RGBA', rgba_img)
-        im_merged.save('texture_{}.png'.format(tex_idx))
+        im_merged.save('texture_{}x{}_{}.png'.format(x_size_reduced, x_size_reduced/2, tex_idx))
 
     return 0
 
