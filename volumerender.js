@@ -114,7 +114,21 @@ var sphereTexture = [],
     allTexturesLoaded = false;
 
 function initTextures() {
-  for(var i=0; i<8; i++) {
+  // Choose a texture size
+  var max_texture_size = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+  var avail_sizes = [2048, 1024, 512, 256];
+  var tex_size = avail_sizes[avail_sizes.length-1];
+  for (var i=0; i<avail_sizes.length; i++) {
+    if (avail_sizes[i] <= max_texture_size) {
+      tex_size = avail_sizes[i];
+      break;
+    }
+  }
+
+  console.log("Choosing texture size " + tex_size + "x" + (tex_size/2));
+
+  // Load the textures
+  for (var i=0; i<8; i++) {
     sphereTexture[i] = gl.createTexture();
     sphereImage[i] = new Image();
     (function(index) {
@@ -128,7 +142,7 @@ function initTextures() {
         }
       };
     }(i));
-    sphereImage[i].src = "texture_" + i + ".png";
+    sphereImage[i].src = "texture_" + tex_size + "x" + (tex_size/2) + "_" + i + ".png";
   };
 }
 

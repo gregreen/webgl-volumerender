@@ -14,6 +14,7 @@
     Your browser does not seem to support the HTML5 <code>&lt;canvas&gt;</code> element.
   </canvas>
   <p><span id="fps"></span><span> frames / second</span></p>
+  <p>To control the camera, press: &#8592; &#8593; &#8594; &#8595; f d</p>
   <script type="x-shader/x-vertex" id="vertex-shader">
     //#version 100
     attribute vec2 position;
@@ -32,12 +33,14 @@
     uniform mat4 cameraRot;
 
     #define pi 3.14159
-    #define fov 0.50*pi  // Field-of-view of camera
-    #define n_steps_max 150 // # of steps to take for each ray
-    #define ray_max_dist 12.0 // Maximum distance for ray
-    #define tau_max 3.0 // Truncate ray after reaching this optical depth
-    #define xi 15.0 // Overall density scaling
-    #define eps 0.0001 // A small number
+    #define fov 0.50*pi         // Field-of-view of camera
+    #define n_steps_max 150     // # of steps to take for each ray
+    #define ray_max_dist 10.0   // Maximum distance for ray
+    #define tau_max 3.0         // Truncate ray after reaching this optical depth
+    #define xi 15.0             // Overall density scaling
+    #define r_max2 (15.*15.)    // Maximum radius (in z=0 plane) to render
+    #define z_max 1.0           // Maximum z to render
+    #define eps 0.0001          // A small number
 
     float step_size = (ray_max_dist / float(n_steps_max));
     float s_max = tau_max / step_size;
@@ -166,112 +169,169 @@
     float density(vec3 xyz) {
       vec3 tpr = xyz2tpr(xyz);  // Convert to spherical coords
 
-      if(tpr[2] < 63.096) {
-        // Convert to texture (u,v) coords
-        vec2 uv = vec2(tpr[1]/(2.*pi), tpr[0]/pi);
-
-        // Determine which texture/channel to load
-        // based on distance from origin.
-        // Go from outside to inside, b/c largest
-        // radii cover most volume.
-        // TODO: Rewrite this as a binary search tree.
-        if(tpr[2] > 50.12) {
-          vec4 img = texture2D(uSampler[7], uv);
-          return img[2];
-        } else if (tpr[2] > 39.81) {
-          vec4 img = texture2D(uSampler[7], uv);
-          return img[1];
-        } else if (tpr[2] > 31.62) {
-          vec4 img = texture2D(uSampler[7], uv);
-          return img[0];
-        } else if (tpr[2] > 25.12) {
-          vec4 img = texture2D(uSampler[6], uv);
-          return img[3];
-        } else if (tpr[2] > 19.95) {
-          vec4 img = texture2D(uSampler[6], uv);
-          return img[2];
-        } else if (tpr[2] > 15.85) {
-          vec4 img = texture2D(uSampler[6], uv);
-          return img[1];
-        } else if (tpr[2] > 12.59) {
-          vec4 img = texture2D(uSampler[6], uv);
-          return img[0];
-        } else if (tpr[2] > 10.00) {
-          vec4 img = texture2D(uSampler[5], uv);
-          return img[3];
-        } else if (tpr[2] > 7.94) {
-          vec4 img = texture2D(uSampler[5], uv);
-          return img[2];
-        } else if (tpr[2] > 6.31) {
-          vec4 img = texture2D(uSampler[5], uv);
-          return img[1];
-        } else if (tpr[2] > 5.01) {
-          vec4 img = texture2D(uSampler[5], uv);
-          return img[0];
-        } else if (tpr[2] > 3.98) {
-          vec4 img = texture2D(uSampler[4], uv);
-          return img[3];
-        } else if (tpr[2] > 3.16) {
-          vec4 img = texture2D(uSampler[4], uv);
-          return img[2];
-        } else if (tpr[2] > 2.51) {
-          vec4 img = texture2D(uSampler[4], uv);
-          return img[1];
-        } else if (tpr[2] > 2.00) {
-          vec4 img = texture2D(uSampler[4], uv);
-          return img[0];
-        } else if (tpr[2] > 1.58) {
-          vec4 img = texture2D(uSampler[3], uv);
-          return img[3];
-        } else if (tpr[2] > 1.26) {
-          vec4 img = texture2D(uSampler[3], uv);
-          return img[2];
-        } else if (tpr[2] > 1.00) {
-          vec4 img = texture2D(uSampler[3], uv);
-          return img[1];
-        } else if (tpr[2] > 0.794) {
-          vec4 img = texture2D(uSampler[3], uv);
-          return img[0];
-        } else if (tpr[2] > 0.631) {
-          vec4 img = texture2D(uSampler[2], uv);
-          return img[3];
-        } else if (tpr[2] > 0.501) {
-          vec4 img = texture2D(uSampler[2], uv);
-          return img[2];
-        } else if (tpr[2] > 0.398) {
-          vec4 img = texture2D(uSampler[2], uv);
-          return img[1];
-        } else if (tpr[2] > 0.316) {
-          vec4 img = texture2D(uSampler[2], uv);
-          return img[0];
-        } else if (tpr[2] > 0.251) {
-          vec4 img = texture2D(uSampler[1], uv);
-          return img[3];
-        } else if (tpr[2] > 0.200) {
-          vec4 img = texture2D(uSampler[1], uv);
-          return img[2];
-        }
-        if (tpr[2] > 0.158) {
-          vec4 img = texture2D(uSampler[1], uv);
-          return img[1];
-        } else if (tpr[2] > 0.126) {
-          vec4 img = texture2D(uSampler[1], uv);
-          return img[0];
-        } else if (tpr[2] > 0.100) {
-          vec4 img = texture2D(uSampler[0], uv);
-          return img[3];
-        } else if (tpr[2] > 0.079) {
-          vec4 img = texture2D(uSampler[0], uv);
-          return img[2];
-        } else if (tpr[2] > 0.063) {
-          vec4 img = texture2D(uSampler[0], uv);
-          return img[1];
-        } else {
-          vec4 img = texture2D(uSampler[0], uv);
-          return img[0];
-        }
-      } else {
+      if(tpr[2] > 63.096) {
         return 0.;
+      }
+      // Convert to texture (u,v) coords
+      vec2 uv = vec2(tpr[1]/(2.*pi), tpr[0]/pi);
+
+      // Determine which texture/channel to load
+      // based on distance from origin.
+      // Go from outside to inside, b/c largest
+      // radii cover most volume.
+      // Written as a binary search tree to minimize
+      // number of comparisons.
+      if(tpr[2] < 2.00) {
+        if(tpr[2] < 0.316) {
+          if(tpr[2] < 0.126) {
+            if(tpr[2] < 0.0794) {
+              if(tpr[2] < 0.0631) {
+                // < 0.0631
+                return texture2D(uSampler[0], uv)[0];
+              } else {
+                // < 0.0794
+                return texture2D(uSampler[0], uv)[1];
+              }
+            } else {
+              if(tpr[2] < 0.100) {
+                // < 0.100
+                return texture2D(uSampler[0], uv)[2];
+              } else {
+                // < 0.126
+                return texture2D(uSampler[0], uv)[3];
+              }
+            }
+          } else {
+            if(tpr[2] < 0.200) {
+              if(tpr[2] < 0.158) {
+                // < 0.158
+                return texture2D(uSampler[1], uv)[0];
+              } else {
+                // < 0.200
+                return texture2D(uSampler[1], uv)[1];
+              }
+            } else {
+              if(tpr[2] < 0.251) {
+                // < 0.251
+                return texture2D(uSampler[1], uv)[2];
+              } else {
+                // < 0.316
+                return texture2D(uSampler[1], uv)[3];
+              }
+            }
+          }
+        } else { // 0.316 < d < 2.00
+          if(tpr[2] < 0.794) {
+            if(tpr[2] < 0.501) {
+              if(tpr[2] < 0.398) {
+                // < 0.398
+                return texture2D(uSampler[2], uv)[0];
+              } else {
+                // < 0.501
+                return texture2D(uSampler[2], uv)[1];
+              }
+            } else {
+              if(tpr[2] < 0.631) {
+                // < 0.631
+                return texture2D(uSampler[2], uv)[2];
+              } else {
+                // < 0.794
+                return texture2D(uSampler[2], uv)[3];
+              }
+            }
+          } else {
+            if(tpr[2] < 1.26) {
+              if(tpr[2] < 1.00) {
+                // < 1.00
+                return texture2D(uSampler[3], uv)[0];
+              } else {
+                // < 1.26
+                return texture2D(uSampler[3], uv)[1];
+              }
+            } else {
+              if(tpr[2] < 1.58) {
+                // < 1.58
+                return texture2D(uSampler[3], uv)[2];
+              } else {
+                // < 2.00
+                return texture2D(uSampler[3], uv)[3];
+              }
+            }
+          }
+        }
+      } else { // d > 2.00
+        if(tpr[2] < 12.59) {
+          if(tpr[2] < 5.01) {
+            if(tpr[2] < 3.16) {
+              if(tpr[2] < 2.51) {
+                // < 2.51
+                return texture2D(uSampler[4], uv)[0];
+              } else {
+                // < 3.16
+                return texture2D(uSampler[4], uv)[1];
+              }
+            } else {
+              if(tpr[2] < 3.98) {
+                // < 3.98
+                return texture2D(uSampler[4], uv)[2];
+              } else {
+                // < 5.01
+                return texture2D(uSampler[4], uv)[3];
+              }
+            }
+          } else {
+            if(tpr[2] < 7.94) {
+              if(tpr[2] < 6.31) {
+                // < 6.31
+                return texture2D(uSampler[5], uv)[0];
+              } else {
+                // < 7.94
+                return texture2D(uSampler[5], uv)[1];
+              }
+            } else {
+              if(tpr[2] < 10.0) {
+                // < 10.00
+                return texture2D(uSampler[5], uv)[2];
+              } else {
+                // < 12.59
+                return texture2D(uSampler[5], uv)[3];
+              }
+            }
+          }
+        } else {
+          if(tpr[2] < 31.62) {
+            if(tpr[2] < 19.95) {
+              if(tpr[2] < 15.85) {
+                // < 15.85
+                return texture2D(uSampler[6], uv)[0];
+              } else {
+                // < 19.95
+                return texture2D(uSampler[6], uv)[1];
+              }
+            } else {
+              if(tpr[2] < 25.12) {
+                // < 25.12
+                return texture2D(uSampler[6], uv)[2];
+              } else {
+                // < 31.62
+                return texture2D(uSampler[6], uv)[3];
+              }
+            }
+          } else {
+            if(tpr[2] < 50.12) {
+              if(tpr[2] < 39.81) {
+                // < 39.81
+                return texture2D(uSampler[7], uv)[0];
+              } else {
+                // < 50.12
+                return texture2D(uSampler[7], uv)[1];
+              }
+            } else {
+              // < 63.10
+              return texture2D(uSampler[7], uv)[2];
+            }
+          }
+        }
       }
     }
 
@@ -311,9 +371,7 @@
       vec3 dx = step_size * vec3(dx4[0], dx4[1], dx4[2]);
 
       // Determine where to begin and end ray
-      float r2 = 15. * 15.;
-      float h = 1.0;
-      vec4 s_intersections = ray_endpoints(r2, h, cameraOrigin, dx);
+      vec4 s_intersections = ray_endpoints(r_max2, z_max, cameraOrigin, dx);
       vec2 s_endpoints = select_endpoints(s_intersections); // start/end distances (in units of step_size)
 
       vec3 x0 = cameraOrigin + s_endpoints[0] * dx;
