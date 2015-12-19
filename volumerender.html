@@ -14,7 +14,7 @@
     Your browser does not seem to support the HTML5 <code>&lt;canvas&gt;</code> element.
   </canvas>
   <p><span id="fps"></span><span> frames / second</span></p>
-  <p>To control the camera, press: &#8592; &#8593; &#8594; &#8595; f d</p>
+  <p>To control the camera, press: <b>&#8592; &#8593; &#8594; &#8595; f d h</b></p>
   <script type="x-shader/x-vertex" id="vertex-shader">
     //#version 100
     attribute vec2 position;
@@ -24,8 +24,9 @@
     }
   </script>
   <script type="x-shader/x-fragment" id="fragment-shader">
-    //#version 100
+    #version 100
     precision mediump float;
+
     uniform vec2 canvasSize;
     uniform sampler2D uSampler[8];
     uniform float time;
@@ -148,8 +149,9 @@
     }
 
     // Random number generator
-    float rand(vec2 co){
-      return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+    float rand(vec2 xy){
+      float t_factor = fract(sin(7919.*time));// - fract(sin(17389.*floor(time/1000.)));
+      return fract(6791.*sin(dot(xy+t_factor, vec2(47.,48611.))));
     }
 
     // Convert Cartesian to Spherical (physics convention)
@@ -385,7 +387,7 @@
 
       // Convert optical depth to opacity
   	  float opacity = 1. - exp(-tau);
-
+      
       gl_FragColor = vec4(opacity, opacity, opacity, 1.0);
       //gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);
       //gl_FragColor = texture2D(uSampler[0], uv);

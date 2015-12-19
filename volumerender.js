@@ -215,7 +215,8 @@ function drawScene() {
 
   var lrRotSpeed = 2. * Math.PI / 5.;   // rad/s
   var udRotSpeed = 2. * Math.PI / 10.;  // rad/s
-  var forwardSpeed = 1. / 5.;           // kpc/s
+  var forwardSpeed = 1. / 10.;          // kpc/s
+  var returningTime = 0.65;              // Decay timescale (s)
 
   if (lrRotState && dt) {
     lrRotAngle += lrRotSpeed * lrRotState * dt / 1000.;
@@ -248,6 +249,15 @@ function drawScene() {
     xyzCamera[0] += cameraVec[0] * speedMod * forwardSpeed * dt / 1000. * forwardState;
     xyzCamera[1] += cameraVec[1] * speedMod * forwardSpeed * dt / 1000. * forwardState;
     xyzCamera[2] += cameraVec[2] * speedMod * forwardSpeed * dt / 1000. * forwardState;
+  }
+
+  if (returningState) {
+    var remainingFrac = Math.exp(-dt/(1000.*returningTime));
+    xyzCamera[0] *= remainingFrac;
+    xyzCamera[1] *= remainingFrac;
+    xyzCamera[2] *= remainingFrac;
+    lrRotAngle *= remainingFrac;
+    udRotAngle *= remainingFrac;
   }
 
   console.log("xyzCamera = " + xyzCamera);
@@ -290,25 +300,31 @@ var lrRotState = null,
 var lrRotAngle = 0.0,
     udRotAngle = 0.0;
 var forwardState = null;
+var returningState = null;
 
 function initKeyEvents() {
   $(document).keydown(function(e) {
     console.log(e);
     if (e.key == "ArrowRight") {
       lrRotState = 1;
+      returningState = null;
       console.log("lrRotState = " + lrRotState);
     } else if (e.key == "ArrowLeft") {
       lrRotState = -1;
+      returningState = null;
       console.log("lrRotState = " + lrRotState);
     } else if (e.key == "ArrowDown") {
       udRotState = -1;
+      returningState = null;
       console.log("udRotState = " + udRotState);
     } else if (e.key == "ArrowUp") {
       udRotState = 1;
+      returningState = null;
       console.log("udRotState = " + udRotState);
     } else if ((e.key == " ") || (e.key == "f")) {
       if (!forwardState || (forwardState == -1)) {
         forwardState = 1;
+        returningState = null;
       } else if (forwardState == 1) {
         forwardState = null;
       }
@@ -316,10 +332,22 @@ function initKeyEvents() {
     } else if (e.key == "d") {
       if (!forwardState || (forwardState == 1)) {
         forwardState = -1;
+        returningState = null;
       } else if (forwardState == -1) {
         forwardState = null;
       }
       console.log("forwardState = " + forwardState);
+    } else if (e.key == "h") {
+      if (!returningState) {
+        returningState = 1;
+        lrRotState = null;
+        udRotState = null;
+        forwardState = null;
+        lrRotAngle = lrRotAngle % (2. * Math.PI);
+        udRotAngle = udRotAngle % Math.PI;
+      } else {
+        returningState = null;
+      }
     }
   });
   $(document).keyup(function(e) {
