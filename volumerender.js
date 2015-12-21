@@ -220,11 +220,11 @@ function drawScene() {
 
   if (lrRotState && dt) {
     lrRotAngle += lrRotSpeed * lrRotState * dt / 1000.;
-    console.log("lrRotAngle = " + lrRotAngle);
+    //console.log("lrRotAngle = " + lrRotAngle);
   }
   if (udRotState && dt) {
     udRotAngle += udRotSpeed * udRotState * dt / 1000.;
-    console.log("udRotAngle = " + udRotAngle);
+    //console.log("udRotAngle = " + udRotAngle);
   }
 
   cameraRotMat = matrixMultiply(
@@ -240,7 +240,7 @@ function drawScene() {
 
   if (forwardState) {
     var speedMod = 1. + Math.sqrt(xyzCamera[0]*xyzCamera[0] + xyzCamera[1]*xyzCamera[1] + xyzCamera[2]*xyzCamera[2]);
-    console.log("forwardState = " + forwardState);
+    //console.log("forwardState = " + forwardState);
     var cameraVec = [
       -Math.cos(lrRotAngle) * Math.cos(udRotAngle),
       -Math.sin(lrRotAngle) * Math.cos(udRotAngle),
@@ -260,7 +260,7 @@ function drawScene() {
     udRotAngle *= remainingFrac;
   }
 
-  console.log("xyzCamera = " + xyzCamera);
+  //console.log("xyzCamera = " + xyzCamera);
 
   var cameraOrigin = gl.getUniformLocation(program, "cameraOrigin");
   gl.uniform3f(cameraOrigin, xyzCamera[0], xyzCamera[1], xyzCamera[2]);
@@ -304,24 +304,23 @@ var returningState = null;
 
 function initKeyEvents() {
   $(document).keydown(function(e) {
-    console.log(e);
-    if (e.key == "ArrowRight") {
+    if ((e.key == "ArrowRight") || (e.keyCode == 39)) {
       lrRotState = 1;
       returningState = null;
       console.log("lrRotState = " + lrRotState);
-    } else if (e.key == "ArrowLeft") {
+    } else if ((e.key == "ArrowLeft") || (e.keyCode == 37)) {
       lrRotState = -1;
       returningState = null;
       console.log("lrRotState = " + lrRotState);
-    } else if (e.key == "ArrowDown") {
+    } else if ((e.key == "ArrowDown") || (e.keyCode == 40)) {
       udRotState = -1;
       returningState = null;
       console.log("udRotState = " + udRotState);
-    } else if (e.key == "ArrowUp") {
+    } else if ((e.key == "ArrowUp") || (e.keyCode == 38)) {
       udRotState = 1;
       returningState = null;
       console.log("udRotState = " + udRotState);
-    } else if ((e.key == " ") || (e.key == "f")) {
+    } else if ((e.key == " ") || (e.keyCode == 32) || (e.key == "f") || (e.keyCode == 70)) {
       if (!forwardState || (forwardState == -1)) {
         forwardState = 1;
         returningState = null;
@@ -329,7 +328,7 @@ function initKeyEvents() {
         forwardState = null;
       }
       console.log("forwardState = " + forwardState);
-    } else if (e.key == "d") {
+    } else if ((e.key == "d") || (e.keyCode == 68)) {
       if (!forwardState || (forwardState == 1)) {
         forwardState = -1;
         returningState = null;
@@ -337,7 +336,7 @@ function initKeyEvents() {
         forwardState = null;
       }
       console.log("forwardState = " + forwardState);
-    } else if (e.key == "h") {
+    } else if ((e.key == "h") || (e.keyCode == 72)) {
       if (!returningState) {
         returningState = 1;
         lrRotState = null;
@@ -351,11 +350,11 @@ function initKeyEvents() {
     }
   });
   $(document).keyup(function(e) {
-    if ((e.key == "ArrowRight") || (e.key == "ArrowLeft")) {
+    if ((e.key == "ArrowRight") || (e.keyCode == 39) || (e.key == "ArrowLeft") || (e.keyCode == 37)) {
       lrRotState = null;
       console.log("lrRotState = " + lrRotState);
     }
-    if ((e.key == "ArrowDown") || (e.key == "ArrowUp")) {
+    if ((e.key == "ArrowDown") || (e.keyCode == 40) || (e.key == "ArrowUp") || (e.keyCode == 38)) {
       udRotState = null;
       console.log("udRotState = " + udRotState);
     }
