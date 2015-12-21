@@ -134,15 +134,14 @@ function initTextures() {
     (function(index) {
       sphereImage[i].onload = function() {
         handleTextureLoaded(sphereImage[index], sphereTexture[index]);
-        console.log('Loaded image ' + index);
-        console.log('# loaded: ' + (nTexturesLoaded+1));
+        console.log('Loaded image ' + index + ' (' + (nTexturesLoaded+1) + ' of 8 loaded)');
         if (++nTexturesLoaded >= 8) {
           allTexturesLoaded = true;
-          console.log("loaded all images.");
+          console.log("Finished loading all images.");
         }
       };
     }(i));
-    sphereImage[i].src = "texture_" + tex_size + "x" + (tex_size/2) + "_" + i + ".png";
+    sphereImage[i].src = staticPath + "media/texture_" + tex_size + "x" + (tex_size/2) + "_" + i + ".png";
   };
 }
 
@@ -310,22 +309,22 @@ function initKeyEvents() {
       lrRotState = 1;
       returningState = null;
       eventUsed = true;
-      console.log("lrRotState = " + lrRotState);
+      //console.log("lrRotState = " + lrRotState);
     } else if ((e.key == "ArrowLeft") || (e.keyCode == 37)) {
       lrRotState = -1;
       returningState = null;
       eventUsed = true;
-      console.log("lrRotState = " + lrRotState);
+      //console.log("lrRotState = " + lrRotState);
     } else if ((e.key == "ArrowDown") || (e.keyCode == 40)) {
       udRotState = -1;
       returningState = null;
       eventUsed = true;
-      console.log("udRotState = " + udRotState);
+      //console.log("udRotState = " + udRotState);
     } else if ((e.key == "ArrowUp") || (e.keyCode == 38)) {
       udRotState = 1;
       returningState = null;
       eventUsed = true;
-      console.log("udRotState = " + udRotState);
+      //console.log("udRotState = " + udRotState);
     } else if ((e.key == " ") || (e.keyCode == 32) || (e.key == "f") || (e.keyCode == 70)) {
       if (!forwardState || (forwardState == -1)) {
         forwardState = 1;
@@ -334,7 +333,7 @@ function initKeyEvents() {
         forwardState = null;
       }
       eventUsed = true;
-      console.log("forwardState = " + forwardState);
+      //console.log("forwardState = " + forwardState);
     } else if ((e.key == "d") || (e.keyCode == 68)) {
       if (!forwardState || (forwardState == 1)) {
         forwardState = -1;
@@ -343,7 +342,7 @@ function initKeyEvents() {
         forwardState = null;
       }
       eventUsed = true;
-      console.log("forwardState = " + forwardState);
+      //console.log("forwardState = " + forwardState);
     } else if ((e.key == "h") || (e.keyCode == 72)) {
       if (!returningState) {
         returningState = 1;
@@ -361,18 +360,17 @@ function initKeyEvents() {
 
     // Prevent the keydown from causing other effects
     if (eventUsed) {
-      console.log("e.preventDefault()");
       e.preventDefault();
     }
   });
   $(document).keyup(function(e) {
     if ((e.key == "ArrowRight") || (e.keyCode == 39) || (e.key == "ArrowLeft") || (e.keyCode == 37)) {
       lrRotState = null;
-      console.log("lrRotState = " + lrRotState);
+      //console.log("lrRotState = " + lrRotState);
     }
     if ((e.key == "ArrowDown") || (e.keyCode == 40) || (e.key == "ArrowUp") || (e.keyCode == 38)) {
       udRotState = null;
-      console.log("udRotState = " + udRotState);
+      //console.log("udRotState = " + udRotState);
     }
   });
 }
