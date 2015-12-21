@@ -304,21 +304,27 @@ var returningState = null;
 
 function initKeyEvents() {
   $(document).keydown(function(e) {
+    var eventUsed = false;
+
     if ((e.key == "ArrowRight") || (e.keyCode == 39)) {
       lrRotState = 1;
       returningState = null;
+      eventUsed = true;
       console.log("lrRotState = " + lrRotState);
     } else if ((e.key == "ArrowLeft") || (e.keyCode == 37)) {
       lrRotState = -1;
       returningState = null;
+      eventUsed = true;
       console.log("lrRotState = " + lrRotState);
     } else if ((e.key == "ArrowDown") || (e.keyCode == 40)) {
       udRotState = -1;
       returningState = null;
+      eventUsed = true;
       console.log("udRotState = " + udRotState);
     } else if ((e.key == "ArrowUp") || (e.keyCode == 38)) {
       udRotState = 1;
       returningState = null;
+      eventUsed = true;
       console.log("udRotState = " + udRotState);
     } else if ((e.key == " ") || (e.keyCode == 32) || (e.key == "f") || (e.keyCode == 70)) {
       if (!forwardState || (forwardState == -1)) {
@@ -327,6 +333,7 @@ function initKeyEvents() {
       } else if (forwardState == 1) {
         forwardState = null;
       }
+      eventUsed = true;
       console.log("forwardState = " + forwardState);
     } else if ((e.key == "d") || (e.keyCode == 68)) {
       if (!forwardState || (forwardState == 1)) {
@@ -335,6 +342,7 @@ function initKeyEvents() {
       } else if (forwardState == -1) {
         forwardState = null;
       }
+      eventUsed = true;
       console.log("forwardState = " + forwardState);
     } else if ((e.key == "h") || (e.keyCode == 72)) {
       if (!returningState) {
@@ -347,6 +355,14 @@ function initKeyEvents() {
       } else {
         returningState = null;
       }
+
+      eventUsed = true;
+    }
+
+    // Prevent the keydown from causing other effects
+    if (eventUsed) {
+      console.log("e.preventDefault()");
+      e.preventDefault();
     }
   });
   $(document).keyup(function(e) {
