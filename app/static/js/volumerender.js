@@ -5,6 +5,28 @@ var gl, program, buffer, canvas;
 
 window.addEventListener("load", init, false);
 
+function getCameraFromURL() {
+  var urlParams = new URLSearchParams(window.location.search);
+
+  if(!urlParams.has("x")) { return null; }
+
+  var x = parseFloat(urlParams.get("x"));
+  var y = parseFloat(urlParams.get("y"));
+  var z = parseFloat(urlParams.get("z"));
+  var alpha = 3.14159/180. * parseFloat(urlParams.get("alpha"));
+  var beta = 3.14159/180. * parseFloat(urlParams.get("beta"));
+
+  var params = {
+    "position": [x, y, z],
+    "alpha": alpha,
+    "beta": beta
+  };
+
+  console.log(params)
+
+  return params;
+}
+
 function initWebGL(canvas) {
   gl = null;
 
@@ -40,7 +62,13 @@ function init() {
     if(allTexturesLoaded) {
       console.log("Took " + (Date.now() - t0) + " ms to initialize.");
       clearInterval(waitInterval);
-      startAnimation();
+
+      var frameProps = getCameraFromURL();
+      if(frameProps) {
+        oneFrame(frameProps);
+      } else {
+        startAnimation();
+      }
     }
   }, 10);
 }
@@ -170,7 +198,7 @@ function updateFPS() {
   if (!fps) {
     fps = 1000. / frameDuration;
   } else {
-    fps = 0.95 * fps + 0.05 * 1000. / frameDuration;
+    fps = 0.80 * fps + 0.20 * 1000. / frameDuration;
   }
 
   tLastFrame = tNow;
@@ -215,7 +243,7 @@ function drawScene() {
   var lrRotSpeed = 2. * Math.PI / 5.;   // rad/s
   var udRotSpeed = 2. * Math.PI / 10.;  // rad/s
   var forwardSpeed = 1. / 10.;          // kpc/s
-  var returningTime = 0.65;              // Decay timescale (s)
+  var returningTime = 0.65;             // Decay timescale (s)
 
   if (lrRotState && dt) {
     lrRotAngle += lrRotSpeed * lrRotState * dt / 1000.;
@@ -285,7 +313,27 @@ function startAnimation() {
   startTime = Date.now();
 
   animationActive = true;
-  drawScene();
+  requestAnimationFrame(drawScene);
+}
+
+function freezeCamera() {
+  lrRotState = null;
+  udRotState = null;
+  forwardState = null;
+  returningState = null;
+}
+
+function oneFrame(frameProperties) {
+  startTime = Date.now();
+  xyzCamera = frameProperties["position"];
+  lrRotAngle = frameProperties["alpha"];
+  udRotAngle = frameProperties["beta"];
+  console.log(xyzCamera);
+
+  animationActive = false;
+  freezeCamera();
+
+  requestAnimationFrame(drawScene);
 }
 
 function stopAnimation() {

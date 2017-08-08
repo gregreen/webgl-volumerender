@@ -37,14 +37,15 @@
     uniform mat4 cameraRot;
 
     #define pi 3.14159
-    #define fov 0.50*pi         // Field-of-view of camera
+    #define fov 0.5*pi          // Field-of-view of camera
     #define n_steps_max 150     // # of steps to take for each ray
     #define ray_max_dist 10.0   // Maximum distance for ray
-    #define tau_max 3.0         // Truncate ray after reaching this optical depth
-    #define xi 15.0             // Overall density scaling
+    #define tau_max 5.0         // Truncate ray after reaching this optical depth
+    #define xi 12.0             // Overall density scaling
     #define r_max2 (15.*15.)    // Maximum radius (in z=0 plane) to render
     #define z_max 1.0           // Maximum z to render
     #define eps 0.0001          // A small number
+    #define n_samples 1         // Number of frames to average
 
     float step_size = (ray_max_dist / float(n_steps_max));
     float s_max = tau_max / step_size;
@@ -360,54 +361,47 @@
     void main() {
       vec2 xy_raw = vec2(gl_FragCoord.x, gl_FragCoord.y);
 
-      // Add a sub-pixel shift to the screen pixel location (to avoid aliasing)
-      vec2 offset = vec2(rand(xy_raw), rand(xy_raw));
-      vec2 screen_xy = xy_raw + offset;
+      float tau = 0.;
+      float norm = 1. / float(n_samples);
 
-      // Map screen (x,y) to standard rectangle:
-      //   * Long axis goes from -1 to 1
-      //   * Short axis has correct aspect ratio
-      float mx = max(canvasSize[0], canvasSize[1]);
-      vec2 uv = 2. * vec2(screen_xy.x-0.5*canvasSize[0], screen_xy.y-0.5*canvasSize[1]) / mx;
+      for(int k=0; k<n_samples; k++) {
+        vec2 seed_vec = xy_raw + vec2(k, k);
 
-      // Camera ray direction (i.e., projection)
-      vec4 dx4 = vec4(unit_ray(uv), 1.);
-      dx4 = cameraRot * dx4;
-      vec3 dx = step_size * vec3(dx4[0], dx4[1], dx4[2]);
+        // Add a sub-pixel shift to the screen pixel location (to avoid aliasing)
+        vec2 offset = vec2(rand(seed_vec), rand(seed_vec));
+        vec2 screen_xy = xy_raw + offset;
 
-      // Determine where to begin and end ray
-      vec4 s_intersections = ray_endpoints(r_max2, z_max, cameraOrigin, dx);
-      vec2 s_endpoints = select_endpoints(s_intersections); // start/end distances (in units of step_size)
+        // Map screen (x,y) to standard rectangle:
+        //   * Long axis goes from -1 to 1
+        //   * Short axis has correct aspect ratio
+        float mx = max(canvasSize[0], canvasSize[1]);
+        vec2 uv = 2. * vec2(screen_xy.x-0.5*canvasSize[0], screen_xy.y-0.5*canvasSize[1]) / mx;
 
-      vec3 x0 = cameraOrigin + s_endpoints[0] * dx;
-      int n_steps = int(s_endpoints[1] - s_endpoints[0]);
-      if(n_steps > n_steps_max) {
-        n_steps = n_steps_max;
+        // Camera ray direction (i.e., projection)
+        vec4 dx4 = vec4(unit_ray(uv), 1.);
+        dx4 = cameraRot * dx4;
+        vec3 dx = step_size * vec3(dx4[0], dx4[1], dx4[2]);
+
+        // Determine where to begin and end ray
+        vec4 s_intersections = ray_endpoints(r_max2, z_max, cameraOrigin, dx);
+        vec2 s_endpoints = select_endpoints(s_intersections); // start/end distances (in units of step_size)
+
+        vec3 x0 = cameraOrigin + s_endpoints[0] * dx;
+        int n_steps = int(s_endpoints[1] - s_endpoints[0]);
+        if(n_steps > n_steps_max) {
+          n_steps = n_steps_max;
+        }
+
+        // Integrate to get optical depth
+        tau += step_size * integrate_ray(x0, dx, n_steps);
       }
 
-      // Integrate to get optical depth
-      float tau = step_size * integrate_ray(x0, dx, n_steps);
+      tau *= norm;
 
       // Convert optical depth to opacity
   	  float opacity = 1. - exp(-tau);
 
       gl_FragColor = vec4(opacity, opacity, opacity, 1.0);
-      //gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);
-      //gl_FragColor = texture2D(uSampler[0], uv);
-      // gl_FragColor = vec4(
-      //   step_size * max(s_intersections[2], 0.) + max(s_intersections[3], 0.),
-      //   step_size * s_intersections[0],
-      //   step_size * s_intersections[1],
-      //   1.
-      // );
-      // gl_FragColor = vec4(
-      //   0.,
-      //   step_size * s_endpoints[1],
-      //   step_size * s_endpoints[0],
-      //   1.
-      // );
-      //gl_FragColor = vec4(s_endpoints[0]/step_size*dx, 1.);
-      //gl_FragColor = vec4(0., float(n_steps)/100., 0., 1.);
     }
   </script>
 </body>
