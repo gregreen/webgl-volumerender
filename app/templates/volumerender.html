@@ -37,19 +37,19 @@
     uniform mat4 cameraRot;
 
     #define pi 3.14159
-    #define fov 0.5*pi          // Field-of-view of camera
-    #define n_steps_max 150     // # of steps to take for each ray
+    #define fov 0.01745329251*{{ fov }} // Field-of-view of camera
+    #define n_steps_max {{ n_steps_max }}      // # of steps to take for each ray
     #define ray_max_dist 10.0   // Maximum distance for ray
-    #define tau_max 5.0         // Truncate ray after reaching this optical depth
-    #define xi 12.0             // Overall density scaling
+    #define tau_max {{ tau_max }}         // Truncate ray after reaching this optical depth
+    #define xi {{ xi }}             // Overall density scaling
     #define r_max2 (15.*15.)    // Maximum radius (in z=0 plane) to render
     #define z_max 1.0           // Maximum z to render
     #define eps 0.0001          // A small number
-    #define n_samples 1         // Number of frames to average
+    #define n_samples {{ n_samples }}         // Number of frames to average
 
     float step_size = (ray_max_dist / float(n_steps_max));
     float s_max = tau_max / step_size;
-    float screen_dist = 1. / sin(0.5*fov);
+    float screen_dist = 1. / tan(0.5*fov);
 
     // Calculate distance, s, at which the ray
     //   $\vec{x}_0 + s \cdot \vec{\delta x}$
