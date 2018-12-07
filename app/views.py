@@ -60,7 +60,7 @@ volumerender_schema = {
         'coerce': float,
         'min': 0.0,
         'max': 1000.0,
-        'default': 12.0
+        'default': 25.0
     },
     'n_samples': {
         'type': 'integer',
