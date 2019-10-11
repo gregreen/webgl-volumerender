@@ -1,5 +1,7 @@
 #!/usr/env python
 
+from __future__ import print_function, division
+
 import numpy as np
 from PIL import Image
 
@@ -16,26 +18,57 @@ def downsample_by_2(img):
       + img[1::2,  1::2]
     )
 
+
 def main():
     try:
         dust_path = os.environ['DUST_PATH']
     except KeyError:
-        print "Set the environement variable 'DUST_PATH'"
-        print 'to the folder containing the dust map.'
+        print("Set the environement variable 'DUST_PATH'")
+        print('to the folder containing the dust map.')
         return 1
 
-    print ''
-    print 'Looking for dust map in folder: "{}"'.format(dust_path)
-    print "If this isn't right, set the environment"
-    print "variable 'DUST_PATH' to the correct path."
-    print ''
+    print('')
+    print('Looking for dust map in folder: "{}"'.format(dust_path))
+    print("If this isn't right, set the environment")
+    print("variable 'DUST_PATH' to the correct path.")
+    print('')
 
     # Open the file and extract pixel information and
     # median reddening in the far limit
-    f = h5py.File(os.path.join(dust_path, 'dust-map-3d.h5'), 'r')
-    pix_info = f['/pixel_info'][:]
-    EBV = f['/best_fit'][:,:]
-    f.close()
+    #fname = 'bayestar2019.h5'
+    #with h5py.File(os.path.join(dust_path, fname), 'r') as f:
+    #    pix_info = f['/pixel_info'][:]
+    #    EBV = f['/best_fit'][:,:]
+    #    #EBV = np.mean(f['/samples'], axis=1)
+    #    #n_samples = f['/samples'].shape[1]
+    #    #EBV = f['/samples'][:,0,:] / n_samples
+    #    #for k in range(1,n_samples):
+    #    #    print(k)
+    #    #    EBV += f['/samples'][:,k,:] / n_samples
+    #    DM = f['/pixel_info'].attrs['DM_bin_edges']
+
+    #fname = 'bayestar2019_mean.h5'
+    #with h5py.File(os.path.join(dust_path, fname), 'w') as f:
+    #    dset = f.create_dataset(
+    #        '/pixel_info',
+    #        data=pix_info,
+    #        chunks=(16462,),
+    #        compression='lzf'
+    #    )
+    #    dset.attrs['DM_bin_edges'] = DM
+    #    dset = f.create_dataset(
+    #        '/mean',
+    #        data=EBV,
+    #        chunks=(16462,8),
+    #        compression='lzf'
+    #    )
+    #return 0
+    
+    fname = 'bayestar2019_mean.h5'
+    with h5py.File(os.path.join(dust_path, fname), 'r') as f:
+        pix_info = f['/pixel_info'][:]
+        EBV = f['/mean'][:,:]
+        DM = f['/pixel_info'].attrs['DM_bin_edges']
 
     EBV[:,1:] = np.diff(EBV, axis=1)
 
@@ -55,7 +88,7 @@ def main():
 
         # Determine nested index of each selected pixel
         # in upsampled map
-        mult_factor = (nside_max/nside)**2
+        mult_factor = (nside_max//nside)**2
         pix_idx_n = pix_info['healpix_index'][idx] * mult_factor
 
         # Write the selected pixels into the upsampled map
@@ -63,20 +96,21 @@ def main():
             arr_idx[pix_idx_n+offset] = idx[:]
 
     pix_missing = (arr_idx == -1)
-    print '{:.3f}% of pixels missing.'.format(100.*float(np.sum(pix_missing))/float(pix_missing.size))
+    print('{:.3f}% of pixels missing.'.format(
+        100.*np.sum(pix_missing)/pix_missing.size
+    ))
 
     # Determine the Cartesian projection
     x_size = 8192
-    n_downsample = 1
-    x_size_reduced = x_size / 2**n_downsample
+    n_downsample = 5
+    x_size_reduced = x_size // 2**n_downsample
     pp = np.linspace(0., 2.*np.pi, x_size+1)[:-1]
-    tt = np.linspace(0., np.pi, x_size/2)
+    tt = np.linspace(0., np.pi, x_size//2)
     t,p = np.meshgrid(tt,pp)
     ipix = hp.pixelfunc.ang2pix(nside_max, t, p, nest=True)
 
     # Rasterize the map at each distance, and pack into RGBA
     # channels of PNG images
-    DM = np.linspace(4., 19., n_dists)
     dists = 10.**(DM/5.-2.)
 
     rgba_img = []
@@ -89,12 +123,15 @@ def main():
         if k != 0:
             dr -= dists[k-1]
 
-        print 'dr = {:.5f}'.format(dr)
+        print('dr = {:.5f}'.format(dr))
 
         EBV_hires = (EBV[:,k]/dr)[arr_idx]
         EBV_hires[pix_missing] = 0.
 
-        print np.percentile(EBV_hires[~pix_missing], [1., 10., 25., 50., 75., 90., 99.])
+        print(np.percentile(
+            EBV_hires[~pix_missing],
+            [1., 10., 25., 50., 75., 90., 99.]
+        ))
 
         proj_map = EBV_hires[ipix][::-1,:]
         for j in xrange(n_downsample):
@@ -109,9 +146,9 @@ def main():
         # plt.show()
         # plt.close(fig)
 
-        print proj_map.shape
+        print(proj_map.shape)
 
-        vmax = np.power(5., 1./4.)
+        vmax = np.power(15., 1./4.)
         proj_map = np.power(proj_map, 1./4.)
         proj_map = (np.clip(proj_map.T, 0., vmax) * (255./vmax)).astype('uint8')
         #if channel == 3:
@@ -122,19 +159,32 @@ def main():
         channel = (channel + 1) % 4
         if channel == 0:
             # Save image
-            print 'Saving image {:d} ...'.format(tex_idx+1)
+            print('Saving image {:d} ...'.format(tex_idx+1))
             im_merged = Image.merge('RGBA', rgba_img)
-            im_merged.save('texture_{}x{}_{}.png'.format(x_size_reduced, x_size_reduced/2, tex_idx))
+            fname = 'texture_b19_{}x{}_{}.png'.format(
+                x_size_reduced,
+                x_size_reduced//2,
+                tex_idx
+            )
+            im_merged.save(fname)
             rgba_img = []
             tex_idx += 1
 
     if len(rgba_img) != 0:
-        print 'Saving image {:d} ...'.format(tex_idx+1)
+        print('Saving image {:d} ...'.format(tex_idx+1))
         for k in range(len(rgba_img),4):
-            img_tmp = 255*np.ones((x_size_reduced/2,x_size_reduced), dtype='uint8')
+            img_tmp = 255*np.ones(
+                (x_size_reduced//2,x_size_reduced),
+                dtype='uint8'
+            )
             rgba_img.append(Image.fromarray(img_tmp))
         im_merged = Image.merge('RGBA', rgba_img)
-        im_merged.save('texture_{}x{}_{}.png'.format(x_size_reduced, x_size_reduced/2, tex_idx))
+        fname = 'texture_{}x{}_{}.png'.format(
+            x_size_reduced,
+            x_size_reduced//2,
+            tex_idx
+        )
+        im_merged.save(fname)
 
     return 0
 

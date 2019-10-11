@@ -88,6 +88,15 @@ volumerender_schema = {
     'beta': {
         'type': 'float',
         'coerce': float
+    },
+    'ver': {
+        'type': 'string',
+        'default': 'b15'
+    },
+    'color': {
+        'type': 'integer',
+        'coerce': int,
+        'default': 0
     }
 }
 
@@ -96,4 +105,19 @@ volumerender_schema = {
 def view_index():
     print('Parsed the following arguments:')
     print(g.args)
+    ver_props = {
+        'b15': {
+            'n_textures': 8,
+            'dm_0': 4.0,
+            'dm_1': 19.0,
+            'n_dm': 31
+        },
+        'b19': {
+            'n_textures': 30,
+            'dm_0': 4.0,
+            'dm_1': 18.875,
+            'n_dm': 120
+        }
+    }[g.args['ver']]
+    g.args.update(ver_props)
     return render_template('volumerender.html', **g.args)

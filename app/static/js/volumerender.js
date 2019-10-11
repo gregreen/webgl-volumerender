@@ -142,6 +142,21 @@ var sphereTexture = [],
     allTexturesLoaded = false;
 
 function initTextures() {
+  // Choose a Bayestar version
+  var urlParams = new URLSearchParams(window.location.search);
+  var ver = "b15";
+  if(urlParams.has("ver")) {
+    ver = urlParams.get("ver");
+  }
+  console.log("Bayestar version: " + ver);
+  
+  // Look up how many textures there are for this version of Bayestar
+  var n_textures = {
+    "b15": 8,
+    "b19": 30
+  }[ver];
+  console.log(n_textures + " textures for this Bayestar version.");
+
   // Choose a texture size
   var max_texture_size = gl.getParameter(gl.MAX_TEXTURE_SIZE);
   var avail_sizes = [2048, 1024, 512, 256];
@@ -152,24 +167,31 @@ function initTextures() {
       break;
     }
   }
-
   console.log("Choosing texture size " + tex_size + "x" + (tex_size/2));
 
   // Load the textures
-  for (var i=0; i<8; i++) {
+  for (var i=0; i<n_textures; i++) {
     sphereTexture[i] = gl.createTexture();
     sphereImage[i] = new Image();
     (function(index) {
       sphereImage[i].onload = function() {
         handleTextureLoaded(sphereImage[index], sphereTexture[index]);
-        console.log('Loaded image ' + index + ' (' + (nTexturesLoaded+1) + ' of 8 loaded)');
-        if (++nTexturesLoaded >= 8) {
+        console.log(
+          'Loaded image ' + index
+          + ' (' + (nTexturesLoaded+1) + ' of ' + n_textures + ')'
+        );
+        if (++nTexturesLoaded >= n_textures) {
           allTexturesLoaded = true;
           console.log("Finished loading all images.");
         }
       };
     }(i));
-    sphereImage[i].src = staticPath + "media/texture_" + tex_size + "x" + (tex_size/2) + "_" + i + ".png";
+    sphereImage[i].src = (
+      staticPath + "media/texture"
+      + "_" + ver
+      + "_" + tex_size + "x" + (tex_size/2)
+      + "_" + i + ".png"
+    );
   };
 }
 
@@ -293,12 +315,12 @@ function drawScene() {
   gl.uniform3f(cameraOrigin, xyzCamera[0], xyzCamera[1], xyzCamera[2]);
 
   // Texture (to be interpreted as Cartesian projection)
-  for(var i=0; i<8; i++) {
+  for(var i=0; i<nTexturesLoaded; i++) {
     gl.activeTexture(gl.TEXTURE0 + i);
     gl.bindTexture(gl.TEXTURE_2D, sphereTexture[i]);
   }
   var textureLoc = gl.getUniformLocation(program, "uSampler");
-  gl.uniform1iv(textureLoc, [0,1,2,3,4,5,6,7,8]);
+  gl.uniform1iv(textureLoc, Array.from(Array(nTexturesLoaded).keys()));
 
   gl.clear(gl.COLOR_BUFFER_BIT);
 
