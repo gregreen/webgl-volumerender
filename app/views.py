@@ -18,8 +18,12 @@ def validate_qstring(schema, **kw):
         def validated(*args, **kwargs):
             # print('validating query string...')
             if not v.validate(request.args.to_dict()):
+                resp = {
+                    'input_errors': v.errors,
+                    'expected_schema': schema
+                }
                 return Response(
-                    json.dumps({'input_errors': v.errors}, indent=2),
+                    json.dumps(resp, indent=2, default=lambda o: str(o)),
                     mimetype='application/json',
                     status=400)
 
