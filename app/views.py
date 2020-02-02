@@ -111,13 +111,13 @@ def view_index():
     print(g.args)
     ver_props = {
         'b15': {
-            'n_textures': 8,
+            'n_textures': 4,
             'dm_0': 4.0,
             'dm_1': 19.0,
             'n_dm': 31
         },
         'b19': {
-            'n_textures': 30,
+            'n_textures': 15,
             'dm_0': 4.0,
             'dm_1': 18.875,
             'n_dm': 120

@@ -55,6 +55,8 @@
     float screen_dist = 1. / tan(0.5*fov);
     vec3 ext_coeffs = vec3(0.25, 0.5, 1.0);
 
+    int dm_split = n_dm / 2;
+    vec2 uv_offset = vec2(0.0, 0.5);
 
     // Calculate distance, s, at which the ray
     //   $\vec{x}_0 + s \cdot \vec{\delta x}$
@@ -195,7 +197,12 @@
       //}
 
       // Convert to texture (u,v) coords
-      vec2 uv = vec2(tpr[1]/(2.*pi), tpr[0]/pi);
+      vec2 uv = vec2(tpr[1]/(2.*pi), tpr[0]/pi*0.5);
+
+      if(d_idx >= dm_split) {
+        d_idx -= dm_split;
+        uv += uv_offset;
+      }
 
       //if(xyz[2] < 0.1) {
       //  return sin(dm);

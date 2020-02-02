@@ -152,8 +152,8 @@ function initTextures() {
   
   // Look up how many textures there are for this version of Bayestar
   var n_textures = {
-    "b15": 8,
-    "b19": 30
+    "b15": 4,
+    "b19": 15
   }[ver];
   console.log(n_textures + " textures for this Bayestar version.");
 
@@ -167,7 +167,7 @@ function initTextures() {
       break;
     }
   }
-  console.log("Choosing texture size " + tex_size + "x" + (tex_size/2));
+  console.log("Choosing texture size " + tex_size + "x" + tex_size);
 
   // Load the textures
   for (var i=0; i<n_textures; i++) {
@@ -189,7 +189,7 @@ function initTextures() {
     sphereImage[i].src = (
       staticPath + "media/texture"
       + "_" + ver
-      + "_" + tex_size + "x" + (tex_size/2)
+      + "_" + tex_size + "x" + tex_size
       + "_" + i + ".png"
     );
   };
